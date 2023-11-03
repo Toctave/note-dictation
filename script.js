@@ -4,6 +4,21 @@ const bpm = 120;
 
 var context = undefined;
 
+const note_names = [
+  'Do',
+  'Do# / Réb',
+  'Ré',
+  'Ré# / Mib',
+  'Mi',
+  'Fa',
+  'Fa# / Solb',
+  'Sol',
+  'Sol# / Lab',
+  'La',
+  'La# / Sib',
+  'Si',
+];
+
 function midi_to_frequency(note) {
   const a4_frequency = 440;
   const a4_note = 69;
@@ -35,7 +50,7 @@ function play_note(note, volume, time, duration) {
   /* osc.stop(time + duration); */
 }
 
-const melody = [
+var melody = [
   {pitch: 60, beats: 1},
   {pitch: 60, beats: 1},
   {pitch: 60, beats: 1},
@@ -52,54 +67,46 @@ const melody = [
   {pitch: 60, beats: 2},
 ];
 
-const note_names = [
-  'Do',
-  'Do# / Réb',
-  'Ré',
-  'Ré# / Mib',
-  'Mi',
-  'Fa',
-  'Fa# / Solb',
-  'Sol',
-  'Sol# / Lab',
-  'La',
-  'La# / Sib',
-  'Si',
-];
-
 const note_sequence = document.getElementById('note_sequence');
 
 function midi_pitch_to_base_note(midi_pitch) {
   return (midi_pitch % 12 + 12) % 12;
 }
 
-for (var i = 0; i < melody.length; i++) {
-  const note = melody[i];
+function refresh_melody() {
+  note_sequence.replaceChildren();
   
-  const pitch_box = document.createElement('select');
+  for (var i = 0; i < melody.length; i++) {
+    const note = melody[i];
+    const pitch_box = document.createElement('select');
 
-  const opt = document.createElement('option');
-  opt.value = undefined;
-  opt.text = 'Choisir une note...';
-  pitch_box.appendChild(opt);
-  
-  for (var j = 0; j < note_names.length; j++) {
     const opt = document.createElement('option');
-    opt.value = j;
-    opt.text = note_names[j];
+    opt.value = undefined;
+    opt.text = 'Choisir une note...';
     pitch_box.appendChild(opt);
-  }
-  pitch_box.classList.add('pitch_box');
+    
+    for (var j = 0; j < note_names.length; j++) {
+      const opt = document.createElement('option');
+      opt.value = j;
+      opt.text = note_names[j];
+      pitch_box.appendChild(opt);
+    }
+    pitch_box.classList.add('pitch_box');
 
-  if (i == 0) {
-    pitch_box.disabled = true;
-    pitch_box.classList.add('valid');
-    pitch_box.value = midi_pitch_to_base_note(melody[i].pitch);
-    pitch_box.text = note_names[pitch_box.value];
+    if (i == 0) {
+      pitch_box.disabled = true;
+      pitch_box.classList.add('valid');
+      pitch_box.value = midi_pitch_to_base_note(melody[i].pitch);
+      pitch_box.text = note_names[pitch_box.value];
+    }
+    
+    note_sequence.appendChild(pitch_box);
   }
-  
-  note_sequence.appendChild(pitch_box);
 }
+
+// ---- Code that runs on first page load ----
+
+refresh_melody();
 
 const play_button = document.getElementById('play_button');
 play_button.addEventListener('click', () => {
@@ -128,3 +135,4 @@ validate_button.addEventListener('click', () => {
     }
   }
 });
+
