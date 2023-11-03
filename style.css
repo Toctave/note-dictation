@@ -1,4 +1,5 @@
 .pitch_box {
+  display: block;
 }
 
 .pitch_box.invalid {

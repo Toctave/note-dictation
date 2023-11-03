@@ -32,7 +32,7 @@ function play_note(note, volume, time, duration) {
   osc.connect(gain_node).connect(context.destination);
 
   osc.start(time);
-  osc.stop(time + duration);
+  /* osc.stop(time + duration); */
 }
 
 const melody = [
