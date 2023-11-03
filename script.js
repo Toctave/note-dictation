@@ -70,7 +70,10 @@ var melody = [
 const note_sequence = document.getElementById('note_sequence');
 
 function midi_pitch_to_base_note(midi_pitch) {
-  return (midi_pitch % 12 + 12) % 12;
+  const result = (midi_pitch % 12 + 12) % 12;
+  console.assert(result >= 0 && result < 12);
+
+  return result;
 }
 
 function refresh_melody() {
@@ -150,7 +153,9 @@ const validate_button = document.getElementById('validate_button');
 validate_button.addEventListener('click', () => {
   for (var i = 0; i < melody.length; i++) {
     const pitch_box = note_sequence.children[i];
-    if (midi_pitch_to_base_note(melody[i].pitch) == pitch_box.value) {
+    const chosen_value = parseInt(pitch_box.value);
+      
+    if (midi_pitch_to_base_note(melody[i].pitch) == chosen_value) {
       pitch_box.classList.remove('invalid');
       pitch_box.classList.add('valid');
     } else {
