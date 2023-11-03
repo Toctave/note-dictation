@@ -105,6 +105,14 @@ function refresh_melody() {
     
     note_sequence.appendChild(pitch_box);
   }
+
+  var txt = '';
+  for (var i = 0; i < melody.length; i++) {
+    txt += note_names[midi_pitch_to_base_note(melody[i].pitch)];
+    txt += ', ';
+  }
+
+  document.getElementById('debug_text').innerText = txt;
 }
 
 function random_int(min, max) {
