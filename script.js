@@ -104,9 +104,28 @@ function refresh_melody() {
   }
 }
 
+function random_int(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min) + min); // The maximum is exclusive and the minimum is inclusive
+}
+
 // ---- Code that runs on first page load ----
 
 refresh_melody();
+
+const regen_button = document.getElementById('regen_button');
+regen_button.addEventListener('click', () => {
+  melody_length = 5;
+  melody = [];
+
+  for (var i = 0; i < melody_length; i++) {
+    const pitch = random_int(60, 72);
+    melody.push({pitch: pitch, beats: 1});
+  }
+
+  refresh_melody();
+});
 
 const play_button = document.getElementById('play_button');
 play_button.addEventListener('click', () => {
