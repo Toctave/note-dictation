@@ -116,12 +116,17 @@ refresh_melody();
 
 const regen_button = document.getElementById('regen_button');
 regen_button.addEventListener('click', () => {
-  melody_length = 5;
-  melody = [];
+  const melody_length = parseInt(document.getElementById('melody_length').value);
+  const max_interval = parseInt(document.getElementById('max_interval').value);
 
-  for (var i = 0; i < melody_length; i++) {
-    const pitch = random_int(60, 72);
+  var prev_pitch = random_int(60, 72);
+  melody = [{pitch: prev_pitch, beats: 1}];
+  
+  for (var i = 1; i < melody_length; i++) {
+    var pitch = random_int(prev_pitch - max_interval, prev_pitch + max_interval + 1);
     melody.push({pitch: pitch, beats: 1});
+
+    prev_pitch = pitch;
   }
 
   refresh_melody();
