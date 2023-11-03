@@ -1,0 +1,11 @@
+.pitch_box {
+}
+
+.pitch_box.invalid {
+  background-color: #FF5733;
+  color: #581845;
+}
+
+.pitch_box.valid {
+  background-color: #DAF7A6;
+}
