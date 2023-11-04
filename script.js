@@ -112,13 +112,26 @@ function refresh_melody() {
     txt += ', ';
   }
 
-  document.getElementById('debug_text').innerText = txt;
+  /* document.getElementById('debug_text').innerText = txt; */
 }
 
 function random_int(min, max) {
   min = Math.ceil(min);
   max = Math.floor(max);
   return Math.floor(Math.random() * (max - min) + min); // The maximum is exclusive and the minimum is inclusive
+}
+
+function play_melody() {
+  if (context === undefined) {
+    context = new AudioContext();
+  }
+
+  let t = context.currentTime;
+  for (const note of melody) {
+    const duration = 60 * (note.beats / bpm);
+    play_note(note.pitch, .5, t, duration);
+    t += duration;
+  }
 }
 
 // ---- Code that runs on first page load ----
@@ -141,20 +154,12 @@ regen_button.addEventListener('click', () => {
   }
 
   refresh_melody();
+  play_melody();
 });
 
 const play_button = document.getElementById('play_button');
 play_button.addEventListener('click', () => {
-  if (context === undefined) {
-    context = new AudioContext();
-  }
-
-  let t = context.currentTime;
-  for (const note of melody) {
-    const duration = 60 * (note.beats / bpm);
-    play_note(note.pitch, .5, t, duration);
-    t += duration;
-  }
+  play_melody();
 });
 
 const validate_button = document.getElementById('validate_button');
