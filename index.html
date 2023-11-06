@@ -17,8 +17,23 @@
         <label for="melody_length">Nombre de notes :</label>
         <input type="number" id="melody_length" value="5" min="2" max="12">
       </div>
-      
+
+      <div>
+        <label for="key">Gamme :</label>
+        <select id="key">
+        </select>
+      </div>
+
+      <div>
+        <label for="tonic">Toujours commencer par la tonique : </label>
+        <input id="tonic" type="checkbox" checked>
+      </div>
+
       <button id="regen_button">Générer</button>
+      <div>
+        <label for="bpm">BPM :</label>
+        <input type="number" id="bpm" value="120" min="30" max="480">
+      </div>
       <button id="play_button">Écouter</button>
 
       <div id ="note_sequence">
@@ -30,5 +45,5 @@
     </div>
   </body>
 
-  <script src="script.js?id=2"></script>
+  <script src="script.js?id=3"></script>
 </html>

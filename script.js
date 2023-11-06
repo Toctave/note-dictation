@@ -1,7 +1,5 @@
 window.AudioContext = window.AudioContext || window.webkitAudioContext;
 
-const bpm = 120;
-
 var context = undefined;
 
 const note_names = [
@@ -17,6 +15,11 @@ const note_names = [
   'La',
   'La# / Sib',
   'Si',
+];
+
+const modes = [
+  {name: 'majeur', intervals: [2, 2, 1, 2, 2, 2, 1]},
+  {name: 'mineur', intervals: [2, 1, 2, 2, 1, 2, 2]},
 ];
 
 var melody = [
@@ -117,20 +120,20 @@ function get_next_note_choices(base, max_interval, scale_semitones) {
 
   for (const direction of [-1, 1]) {
     var interval = 0;
-    var current = {position: base.position, octave: base.octave};
+    var current = {degree: base.degree, octave: base.octave};
 
     while (Math.abs(interval) <= max_interval) {
-      const prev_pos = current.position;
+      const prev_pos = current.degree;
       const prev_octave = current.octave;
 
-      current.position += direction;
-      current.octave += div(current.position, scale_semitones.length);
-      current.position = mod(current.position, scale_semitones.length);
+      current.degree += direction;
+      current.octave += div(current.degree, scale_semitones.length);
+      current.degree = mod(current.degree, scale_semitones.length);
 
-      interval += (scale_semitones[current.position] - scale_semitones[prev_pos]) + 12 * (current.octave - prev_octave);
+      interval += (scale_semitones[current.degree] - scale_semitones[prev_pos]) + 12 * (current.octave - prev_octave);
 
       if (Math.abs(interval) <= max_interval) {
-        choices.push({position: current.position, octave: current.octave});
+        choices.push({degree: current.degree, octave: current.octave});
       }
     }
   }
@@ -138,8 +141,8 @@ function get_next_note_choices(base, max_interval, scale_semitones) {
   return choices;
 }
 
-function generate_melody(length, max_interval, scale_semitones) {
-  const melody = [{octave: 4, position: 0}];
+function generate_melody(length, max_interval, scale_semitones, first_degree) {
+  const melody = [{octave: 0, degree: first_degree}];
 
   for (var i = 1; i < length; i++) {
     const prev = melody[melody.length - 1];
@@ -153,10 +156,42 @@ function generate_melody(length, max_interval, scale_semitones) {
 function regen_melody() {
   const melody_length = parseInt(document.getElementById('melody_length').value);
   const max_interval = parseInt(document.getElementById('max_interval').value);
-  const scale_semitones = [0, 2, 4, 5, 7, 9, 11];
 
-  melody = generate_melody(melody_length, max_interval, scale_semitones).map((x) => {
-    const pitch = octave_and_semitones_to_midi({octave: x.octave, semitones: scale_semitones[x.position]});
+  const key_value = document.getElementById('key').value;
+  var mode_index;
+  var key_index;
+  
+  if (key_value === 'random') {
+    mode_index = random_int(0, modes.length);
+    key_index = random_int(0, 12);
+  } else {
+    console.log('key_value = ', key_value);
+    [mode_index, key_index] = JSON.parse(key_value);
+  }
+
+  console.log(mode_index);
+  console.log(key_index);
+
+  const scale_intervals = modes[mode_index].intervals;
+  const scale_semitones = [0];
+  for (const i of scale_intervals) {
+    scale_semitones.push(scale_semitones[scale_semitones.length - 1] + i)
+  }
+  
+  const last = scale_semitones.pop(); // remove last element
+  console.assert(last === 12);
+  console.assert(scale_semitones.length === 7);
+
+  var first;
+  if (document.getElementById('tonic').checked) {
+    first = 0;
+  } else {
+    first = random_int(0, scale_intervals.length);
+  }
+
+  const midi_base = 60 + key_index;
+  melody = generate_melody(melody_length, max_interval, scale_semitones, first).map((x) => {
+    const pitch = midi_base + x.octave * 12 + scale_semitones[x.degree];
 
     return {pitch: pitch, beats: 1};
   });
@@ -206,6 +241,8 @@ function play_melody() {
     context = new AudioContext();
   }
 
+  const bpm = parseInt(document.getElementById('bpm').value);
+
   let t = context.currentTime;
   for (const note of melody) {
     const duration = 60 * (note.beats / bpm);
@@ -222,32 +259,52 @@ function midi_note_to_name(midi_note) {
 
 // ---- Code that runs on first page load ----
 
-refresh_melody();
-
-const regen_button = document.getElementById('regen_button');
-regen_button.addEventListener('click', () => {
-  regen_melody();
+{
   refresh_melody();
-  play_melody();
-});
 
-const play_button = document.getElementById('play_button');
-play_button.addEventListener('click', () => {
-  play_melody();
-});
+  const regen_button = document.getElementById('regen_button');
+  regen_button.addEventListener('click', () => {
+    regen_melody();
+    refresh_melody();
+    play_melody();
+  });
 
-const validate_button = document.getElementById('validate_button');
-validate_button.addEventListener('click', () => {
-  for (var i = 0; i < melody.length; i++) {
-    const pitch_box = note_sequence.children[i];
-    const chosen_value = parseInt(pitch_box.value);
+  const play_button = document.getElementById('play_button');
+  play_button.addEventListener('click', () => {
+    play_melody();
+  });
 
-    if (midi_pitch_to_base_note(melody[i].pitch) == chosen_value) {
-      pitch_box.classList.remove('invalid');
-      pitch_box.classList.add('valid');
-    } else {
-      pitch_box.classList.remove('valid');
-      pitch_box.classList.add('invalid');
+  const validate_button = document.getElementById('validate_button');
+  validate_button.addEventListener('click', () => {
+    for (var i = 0; i < melody.length; i++) {
+      const pitch_box = note_sequence.children[i];
+      const chosen_value = parseInt(pitch_box.value);
+
+      if (midi_pitch_to_base_note(melody[i].pitch) == chosen_value) {
+        pitch_box.classList.remove('invalid');
+        pitch_box.classList.add('valid');
+      } else {
+        pitch_box.classList.remove('valid');
+        pitch_box.classList.add('invalid');
+      }
+    }
+  });
+
+  const key_select = document.getElementById('key');
+
+  const opt = document.createElement('option');
+  opt.value = 'random';
+  opt.text = 'Aléatoire';
+  key_select.appendChild(opt);
+
+  for (var mode_index = 0; mode_index < modes.length; mode_index++) {
+    const mode = modes[mode_index];
+    for (var note = 0; note < note_names.length; note++) {
+      const opt = document.createElement('option');
+      opt.value = JSON.stringify([mode_index, note]);
+      opt.text = note_names[note] + ' ' + mode.name;
+      key_select.appendChild(opt);
     }
   }
-});
+  key_select.value = JSON.stringify([0, 0]);
+}
