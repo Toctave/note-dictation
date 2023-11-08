@@ -1,6 +1,7 @@
 window.AudioContext = window.AudioContext || window.webkitAudioContext;
 
 var context = undefined;
+var main_gain = undefined;
 
 const note_names = [
   'Do',
@@ -42,6 +43,14 @@ var melody = [
 const note_sequence = document.getElementById('note_sequence');
 
 // ---- UTILITY FUNCTIONS ----
+
+function db_to_amplitude(db) {
+  return Math.pow(10.0, db / 20.0);
+}
+
+function amplitude_to_db(ampl) {
+  return 20.0 * Math.log10(ampl);
+}
 
 function mod(n, m) {
   return ((n % m) + m) % m;
@@ -95,6 +104,8 @@ function play_note(note, volume, time, duration) {
   const sustain = duration - attack - decay - release;
   const sustain_rate = .8;
 
+  osc.frequency.setValueAtTime(midi_to_frequency(note), time);
+
   gain_node.gain.setValueAtTime(0, time);
   gain_node.gain.linearRampToValueAtTime(volume, time + attack);
   gain_node.gain.linearRampToValueAtTime(volume * sustain_rate, time + attack + decay);
@@ -102,8 +113,7 @@ function play_note(note, volume, time, duration) {
   gain_node.gain.setValueAtTime(volume * sustain_rate, time + attack + decay + sustain);
   gain_node.gain.linearRampToValueAtTime(0, time + attack + decay + sustain + release);
 
-  osc.connect(gain_node).connect(context.destination);
-
+  osc.connect(gain_node).connect(main_gain);
   osc.start(time);
   osc.stop(time + duration);
 }
@@ -160,7 +170,7 @@ function regen_melody() {
   const key_value = document.getElementById('key').value;
   var mode_index;
   var key_index;
-  
+
   if (key_value === 'random') {
     mode_index = random_int(0, modes.length);
     key_index = random_int(0, 12);
@@ -177,7 +187,7 @@ function regen_melody() {
   for (const i of scale_intervals) {
     scale_semitones.push(scale_semitones[scale_semitones.length - 1] + i)
   }
-  
+
   const last = scale_semitones.pop(); // remove last element
   console.assert(last === 12);
   console.assert(scale_semitones.length === 7);
@@ -236,17 +246,23 @@ function refresh_melody() {
   /* document.getElementById('debug_text').innerText = txt; */
 }
 
-function play_melody() {
+function create_audio_context_if_not_exists() {
   if (context === undefined) {
     context = new AudioContext();
+    main_gain = new GainNode(context, {gain: 1});
+    main_gain.connect(context.destination);
   }
+}
 
+function play_melody() {
+  create_audio_context_if_not_exists();
   const bpm = parseInt(document.getElementById('bpm').value);
 
-  let t = context.currentTime;
+  let t = context.currentTime + .05; // add a bit of delay to avoid artefacts
+
   for (const note of melody) {
     const duration = 60 * (note.beats / bpm);
-    play_note(note.pitch, .5, t, duration);
+    play_note(note.pitch, 1, t, duration);
     t += duration;
   }
 }
@@ -307,4 +323,22 @@ function midi_note_to_name(midi_note) {
     }
   }
   key_select.value = JSON.stringify([0, 0]);
+
+  const volume_slider = document.getElementById('volume');
+  volume_slider.addEventListener('input', (event) => {
+    create_audio_context_if_not_exists();
+
+    const volume_value = event.target.value;
+    const dB = (volume_value - 1) * 30;
+    let gain = db_to_amplitude(dB);
+
+    const linear_range = .1;
+    if (volume_value < linear_range) {
+      gain = (volume_value / linear_range) * db_to_amplitude((linear_range - 1) * 30);
+    }
+
+    console.log(volume_value.toString() + ' ' + gain.toString());
+
+    main_gain.gain.linearRampToValueAtTime(gain, context.currentTime + .05);
+  });
 }
